@@ -1,22 +1,21 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   typescript: {
-    ignoreBuildErrors: true, // keeps build working even if TS errors exist
+    ignoreBuildErrors: true,
   },
   images: {
-    unoptimized: true, // avoids image optimization errors
+    unoptimized: true,
   },
   webpack: (config, { isServer }) => {
-    // Don't bundle Prisma client on the client
+    // Don't bundle Prisma client
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
-        ".prisma/client": false, // fix fallback for Prisma
+        ".prisma/client/default": false,
       };
     }
     return config;
   },
-  turbopack: {}, // <-- disables Turbopack and prevents build errors
-};
+}
 
-export default nextConfig;
+export default nextConfig

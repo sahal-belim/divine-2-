@@ -1,57 +1,37 @@
-import { NextRequest, NextResponse } from 'next/server';
-
-// In-memory storage for server (will be reset on redeploy)
-let serverProducts: any[] = [];
-
-interface Product {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  sizes: string[];
-  image?: string;
-  published: boolean;
-  createdAt: string;
-}
+import { prisma } from "@/lib/prisma";
+import { NextRequest, NextResponse } from "next/server";
 
 export async function GET() {
   try {
-    return NextResponse.json({ success: true, data: serverProducts });
+    const products = await prisma.product.findMany({
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    return NextResponse.json(products);
   } catch (error) {
-    return NextResponse.json({ success: false, error: 'Failed to fetch products' }, { status: 500 });
+    return NextResponse.json({ error: "Failed to fetch products" }, { status: 500 });
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
-    const body = await request.json();
-    const { name, description, price, sizes, image, published } = body;
+    const body = await req.json();
 
-    if (!name || !description || !price) {
-      return NextResponse.json(
-        { success: false, error: 'Missing required fields' },
-        { status: 400 }
-      );
-    }
+    const product = await prisma.product.create({
+      data: {
+        name: body.name,
+        description: body.description,
+        price: parseFloat(body.price),
+        imageUrl: body.imageUrl || null,
+        sizes: JSON.stringify(body.sizes || []),
+        published: body.published ?? true,
+      },
+    });
 
-    const newProduct: Product = {
-      id: Date.now().toString(),
-      name,
-      description,
-      price: parseFloat(price),
-      sizes: sizes || [],
-      image: image || undefined,
-      published: published || false,
-      createdAt: new Date().toISOString(),
-    };
-
-    serverProducts.push(newProduct);
-
-    return NextResponse.json({ success: true, data: newProduct }, { status: 201 });
+    return NextResponse.json(product);
   } catch (error) {
-    return NextResponse.json(
-      { success: false, error: 'Failed to create product' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to create product" }, { status: 500 });
   }
 }
